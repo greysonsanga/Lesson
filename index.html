@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI-Powered KoboToolbox Form Filler</title>
+  <title>Layman AI KoboToolbox Form Filler</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
   <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg">
-    <h1 class="text-2xl font-bold mb-6 text-center">KoboToolbox Form Auto-Filler</h1>
+    <h1 class="text-2xl font-bold mb-6 text-center">KoboToolbox Layman Form Filler</h1>
     <div class="space-y-4">
       <button onclick="openForm()" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Open and Auto-Fill Form</button>
       <button onclick="submitForm()" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500" id="submitBtn" disabled>Submit Form</button>
@@ -23,29 +23,45 @@
     const iframe = document.getElementById("formIframe");
     const submitBtn = document.getElementById("submitBtn");
 
-    // Mock data for AI auto-filling
+    // Mock data for layman-like responses
     const mockData = {
-      fullName: ["Amina Juma", "John Mushi", "Fatuma Ally", "Emmanuel Kweka"],
+      fullName: ["Juma Hassan", "Fatuma Ally", "Mary John", "Emmanuel Kweka", "Aisha Mushi"],
       gender: ["Male", "Female"],
-      civilStatus: ["Single", "Married", "Divorced"],
-      placeOfBirth: ["Dar es Salaam", "Dodoma", "Arusha"],
-      province: ["Dar es Salaam", "Mwanza", "Mbeya"],
-      address: ["123 Mbagala St", "45 Kivukoni Rd", "78 Uhuru Ave"],
+      maritalStatus: ["Single", "Married", "Divorced", "Widowed"],
+      region: ["Dar es Salaam", "Dodoma", "Arusha", "Mwanza", "Mbeya"],
+      address: ["Mbagala", "Kivukoni", "Kinondoni", "Temeke"],
+      phone: ["+255712345678", "+255723456789", "+255734567890", "+255745678901"],
+      email: ["juma.hassan@gmail.com", "fatuma.ally@yahoo.com", "mary.john@outlook.com"],
       idNumber: ["TZ123456789", "TZ987654321", "TZ456789123"],
-      idType: ["Tazkira", "Passport"],
-      email: ["amina.juma@example.com", "john.mushi@example.com"],
-      phone: ["+255712345678", "+255723456789"]
+      education: ["Secondary", "Certificate", "Diploma", "Degree"],
+      occupation: ["Farmer", "Trader", "Teacher", "Driver", "Housewife"],
+      yesNo: ["Yes", "No"],
+      healthStatus: ["Good", "Fair", "Poor"]
     };
 
-    function getRandomItem(array) {
-      return array[Math.floor(Math.random() * array.length)];
+    // Probability weights for layman choices (favor common options)
+    const choiceWeights = {
+      gender: { Male: 0.5, Female: 0.5 },
+      maritalStatus: { Single: 0.6, Married: 0.3, Divorced: 0.05, Widowed: 0.05 },
+      yesNo: { No: 0.7, Yes: 0.3 }, // Layman avoids complexity
+      healthStatus: { Good: 0.7, Fair: 0.25, Poor: 0.05 }
+    };
+
+    function getWeightedRandomItem(options, weights) {
+      const total = Object.values(weights).reduce((sum, w) => sum + w, 0);
+      let rand = Math.random() * total;
+      for (const [option, weight] of Object.entries(weights)) {
+        rand -= weight;
+        if (rand <= 0) return option;
+      }
+      return options[0]; // Fallback
     }
 
-    // AI logic to auto-fill form
+    // AI logic to auto-fill form as a layman
     function autoFillForm(doc) {
       try {
         // Find all form inputs
-        const textInputs = doc.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"]');
+        const textInputs = doc.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], input[type="number"]');
         const radioInputs = doc.querySelectorAll('input[type="radio"]');
         const checkboxes = doc.querySelectorAll('input[type="checkbox"]');
         const selects = doc.querySelectorAll('select');
@@ -53,43 +69,66 @@
         // Auto-fill text inputs
         textInputs.forEach(input => {
           const name = input.name.toLowerCase();
-          if (name.includes("name")) input.value = getRandomItem(mockData.fullName);
-          else if (name.includes("birth")) input.value = getRandomItem(mockData.placeOfBirth);
-          else if (name.includes("address")) input.value = getRandomItem(mockData.address);
-          else if (name.includes("id") || name.includes("tazkira") || name.includes("passport")) input.value = getRandomItem(mockData.idNumber);
-          else if (name.includes("email")) input.value = getRandomItem(mockData.email);
-          else if (name.includes("phone")) input.value = getRandomItem(mockData.phone);
-          else input.value = "Sample Text";
+          const label = input.closest('.question')?.querySelector('label')?.textContent.toLowerCase() || '';
+          if (name.includes("name") || label.includes("name")) input.value = mockData.fullName[0]; // Use first name for consistency
+          else if (name.includes("region") || name.includes("province") || label.includes("region")) input.value = mockData.region[0]; // Prefer major region
+          else if (name.includes("address") || label.includes("address")) input.value = mockData.address[0];
+          else if (name.includes("phone") || label.includes("phone")) input.value = mockData.phone[0];
+          else if (name.includes("email") || label.includes("email")) input.value = mockData.email[0];
+          else if (name.includes("id") || name.includes("tazkira") || label.includes("id")) input.value = mockData.idNumber[0];
+          else if (name.includes("occupation") || label.includes("occupation")) input.value = mockData.occupation[0];
+          else input.value = "N/A"; // Layman default for unknown fields
         });
 
-        // Auto-fill radio buttons (select one per group)
+        // Auto-fill radio buttons
         const radioGroups = new Set([...radioInputs].map(r => r.name));
         radioGroups.forEach(group => {
           const groupRadios = doc.querySelectorAll(`input[name="${group}"]`);
-          const randomRadio = groupRadios[Math.floor(Math.random() * groupRadios.length)];
-          randomRadio.checked = true;
+          const label = groupRadios[0].closest('.question')?.querySelector('label')?.textContent.toLowerCase() || '';
+          let choice;
+          if (group.includes("gender") || label.includes("gender")) {
+            choice = getWeightedRandomItem(mockData.gender, choiceWeights.gender);
+          } else if (group.includes("marital") || label.includes("marital")) {
+            choice = getWeightedRandomItem(mockData.maritalStatus, choiceWeights.maritalStatus);
+          } else if (group.includes("yesno") || label.includes("yes") || label.includes("no")) {
+            choice = getWeightedRandomItem(mockData.yesNo, choiceWeights.yesNo);
+          } else if (group.includes("health") || label.includes("health")) {
+            choice = getWeightedRandomItem(mockData.healthStatus, choiceWeights.healthStatus);
+          } else {
+            choice = groupRadios[0].value; // Default to first option
+          }
+          const radio = Array.from(groupRadios).find(r => r.value.toLowerCase() === choice.toLowerCase());
+          if (radio) radio.checked = true;
         });
 
-        // Auto-fill checkboxes (randomly check 0-2 per group)
+        // Auto-fill checkboxes (select 1 for simplicity)
         const checkboxGroups = new Set([...checkboxes].map(c => c.name));
         checkboxGroups.forEach(group => {
           const groupCheckboxes = doc.querySelectorAll(`input[name="${group}"]`);
-          const toCheck = Math.floor(Math.random() * 3); // 0-2 checkboxes
-          for (let i = 0; i < toCheck && i < groupCheckboxes.length; i++) {
-            groupCheckboxes[i].checked = true;
+          if (groupCheckboxes.length > 0) {
+            groupCheckboxes[0].checked = true; // Layman picks first option
           }
         });
 
         // Auto-fill select dropdowns
         selects.forEach(select => {
+          const name = select.name.toLowerCase();
+          const label = select.closest('.question')?.querySelector('label')?.textContent.toLowerCase() || '';
           const options = select.querySelectorAll('option:not([value=""])');
           if (options.length > 0) {
-            const randomOption = options[Math.floor(Math.random() * options.length)];
-            select.value = randomOption.value;
+            let choice;
+            if (name.includes("region") || label.includes("region")) {
+              choice = mockData.region[0];
+            } else if (name.includes("education") || label.includes("education")) {
+              choice = mockData.education[0];
+            } else {
+              choice = options[0].value; // Default to first option
+            }
+            select.value = Array.from(options).find(o => o.text.toLowerCase().includes(choice.toLowerCase()))?.value || options[0].value;
           }
         });
 
-        message.textContent = "Form auto-filled successfully! Click 'Submit Form' to submit.";
+        message.textContent = "Form auto-filled with layman responses! Click 'Submit Form' to submit.";
         submitBtn.disabled = false;
       } catch (error) {
         message.textContent = "Error auto-filling form. Try the content script fallback (see console).";
@@ -145,45 +184,75 @@
       return `
         // Paste this in the browser console on the form page (https://ee.kobotoolbox.org/x/so7jKAYr)
         const mockData = ${JSON.stringify(mockData)};
-        function getRandomItem(array) {
-          return array[Math.floor(Math.random() * array.length)];
+        const choiceWeights = ${JSON.stringify(choiceWeights)};
+        function getWeightedRandomItem(options, weights) {
+          const total = Object.values(weights).reduce((sum, w) => sum + w, 0);
+          let rand = Math.random() * total;
+          for (const [option, weight] of Object.entries(weights)) {
+            rand -= weight;
+            if (rand <= 0) return option;
+          }
+          return options[0];
         }
-        const textInputs = document.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"]');
+        const textInputs = document.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], input[type="number"]');
         textInputs.forEach(input => {
           const name = input.name.toLowerCase();
-          if (name.includes("name")) input.value = getRandomItem(mockData.fullName);
-          else if (name.includes("birth")) input.value = getRandomItem(mockData.placeOfBirth);
-          else if (name.includes("address")) input.value = getRandomItem(mockData.address);
-          else if (name.includes("id") || name.includes("tazkira") || name.includes("passport")) input.value = getRandomItem(mockData.idNumber);
-          else if (name.includes("email")) input.value = getRandomItem(mockData.email);
-          else if (name.includes("phone")) input.value = getRandomItem(mockData.phone);
-          else input.value = "Sample Text";
+          const label = input.closest('.question')?.querySelector('label')?.textContent.toLowerCase() || '';
+          if (name.includes("name") || label.includes("name")) input.value = mockData.fullName[0];
+          else if (name.includes("region") || name.includes("province") || label.includes("region")) input.value = mockData.region[0];
+          else if (name.includes("address") || label.includes("address")) input.value = mockData.address[0];
+          else if (name.includes("phone") || label.includes("phone")) input.value = mockData.phone[0];
+          else if (name.includes("email") || label.includes("email")) input.value = mockData.email[0];
+          else if (name.includes("id") || name.includes("tazkira") || label.includes("id")) input.value = mockData.idNumber[0];
+          else if (name.includes("occupation") || label.includes("occupation")) input.value = mockData.occupation[0];
+          else input.value = "N/A";
         });
         const radioInputs = document.querySelectorAll('input[type="radio"]');
         const radioGroups = new Set([...radioInputs].map(r => r.name));
         radioGroups.forEach(group => {
           const groupRadios = document.querySelectorAll(\`input[name="\${group}"]\`);
-          const randomRadio = groupRadios[Math.floor(Math.random() * groupRadios.length)];
-          randomRadio.checked = true;
+          const label = groupRadios[0].closest('.question')?.querySelector('label')?.textContent.toLowerCase() || '';
+          let choice;
+          if (group.includes("gender") || label.includes("gender")) {
+            choice = getWeightedRandomItem(mockData.gender, choiceWeights.gender);
+          } else if (group.includes("marital") || label.includes("marital")) {
+            choice = getWeightedRandomItem(mockData.maritalStatus, choiceWeights.maritalStatus);
+          } else if (group.includes("yesno") || label.includes("yes") || label.includes("no")) {
+            choice = getWeightedRandomItem(mockData.yesNo, choiceWeights.yesNo);
+          } else if (group.includes("health") || label.includes("health")) {
+            choice = getWeightedRandomItem(mockData.healthStatus, choiceWeights.healthStatus);
+          } else {
+            choice = groupRadios[0].value;
+          }
+          const radio = Array.from(groupRadios).find(r => r.value.toLowerCase() === choice.toLowerCase());
+          if (radio) radio.checked = true;
         });
         const checkboxes = document.querySelectorAll('input[type="checkbox"]');
         const checkboxGroups = new Set([...checkboxes].map(c => c.name));
         checkboxGroups.forEach(group => {
           const groupCheckboxes = document.querySelectorAll(\`input[name="\${group}"]\`);
-          const toCheck = Math.floor(Math.random() * 3);
-          for (let i = 0; i < toCheck && i < groupCheckboxes.length; i++) {
-            groupCheckboxes[i].checked = true;
+          if (groupCheckboxes.length > 0) {
+            groupCheckboxes[0].checked = true;
           }
         });
         const selects = document.querySelectorAll('select');
         selects.forEach(select => {
+          const name = select.name.toLowerCase();
+          const label = select.closest('.question')?.querySelector('label')?.textContent.toLowerCase() || '';
           const options = select.querySelectorAll('option:not([value=""])');
           if (options.length > 0) {
-            const randomOption = options[Math.floor(Math.random() * options.length)];
-            select.value = randomOption.value;
+            let choice;
+            if (name.includes("region") || label.includes("region")) {
+              choice = mockData.region[0];
+            } else if (name.includes("education") || label.includes("education")) {
+              choice = mockData.education[0];
+            } else {
+              choice = options[0].value;
+            }
+            select.value = Array.from(options).find(o => o.text.toLowerCase().includes(choice.toLowerCase()))?.value || options[0].value;
           }
         });
-        console.log("Form auto-filled. Click the submit button manually.");
+        console.log("Form auto-filled with layman responses. Click the submit button manually.");
       `;
     }
   </script>
