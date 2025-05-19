@@ -1,73 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>  <H1 align="center" style="font-size:30px ;" ><DIV STYLE="background-color: rgb(13, 13, 157); COLOR:WHITE">Kuanzia 07-14 march</DIV></H1>
-            
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    h1 {font-family: "Times New Roman", Times, serif;
-      ;
-    }
-    
-    
-    h2 {
-        font-family: "Times New Roman", Times, serif;
-    }
-    .fungu {
-      font-family: "Times New Roman", Times, serif;
-      font-style: italic;
-    }
-    p {  font-family: "Times New Roman", Times, serif;}
-    strong {
-      font-weight: bold;
-      font-family: "Times New Roman", Times, serif;
-    }
-    .button {
-        display: inline-block;
-        padding: 2.5px 5px;
-        margin: 2.5px;
-        background-color: #008CBA;
-        color: white;
-        text-align: center;
-        text-decoration: none;
-        
-      
-
-      }
-    
-  </style>
-  <title>lesson-leo</title>
+  <title>AI-Powered KoboToolbox Form Filler</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-<H3>Somo La 7</H3>
-<p>Usomaji wa biblia <a href="....">Yeremia 13</a></p>
-        <br>
-        <H5 align="right" style="font-size:15px ;">Februari 10-16</H5>
-    
-        <br>
-        <h4 align="center" style="font-size:20px ;">Fadhili Zako Zinafika Mbinguni</h4>
-        
-        <p><img align="center" src="lesei/somo7.png" alt="Description of image 1" height="250" width="600" ><br></p>
-       <hr> <p>SABATO MCHANA</p>
-       <p>Somo La Juma hili: Zaburi 136, Zaburi 51, Zaburi 130, Zaburi 113, Zaburi 123.</p>
-       <p>Fungu La Kukariri</p>
-       <p class="fungu"> "Ee Bwana, nitakushukuru kati ya watu, Nitakuimbia zaburi kati ya mataifa. Maana fadhili zako ni kubwa hata mbinguni, Na uaminifu wako hata mawinguni" (Zaburi 57:9, 10).
-      </p>
-    </p><p>
-      Watunga-zaburi wanatambua kwamba wao ni maskini Mungu; yaani, hawana chochote wao wenyewe ambacho kingewapendekeza mbele za kiti kitakatifu cha enzi cha Mungu (Zab. 40:17). Wanaelewa kwamba wao, kama sisi sote, wanahitaji neema, neema ya Mungu.
-      </p><p>
-      
-      Kwa ufupi, wanahitaji injili. Zaburi inasisitiza ukweli kwamba watu wanazitegemea kabisa fadhili za Mungu. Kwa bahati nzuri, fadhili za Mungu ni za milele, kama inavyothibitishwa katika uumbaji wa Mungu na historia ya watu wa Mungu (Zaburi 136). Mbele za Mungu wa milele, maisha ya mwanadamu ni ya muda mfupi kama majani, lakini Mungu anawahurumia wanadamu na kuwapa nguvu mpya (Zab. 103:3, 5, 15), na ndani Yake wana ahadi ya umilele. Watu wa Mungu wanapata faraja katika ukweli kwamba
-      </p><p>
-      
-      Bwana ni mwaminifu kwa agano Lake. Maombi ya watu, haidhuru ni ya kusihi kiasi gani nyakati fulani, mara nyingi yamejaa tumaini kwa sababu yanaelekezwa kwa Baba yao wa mbinguni mwenye huruma (Zab. 103:13, Zab. 68:5, Zab. 89:26). Uzoefu mpya wa neema na upendo wa Mungu unalifanya thabiti azimio lao la kumwabudu na kumtumikia Mungu na hakuna mtu au kitu kingine chochote.
-      </p><p>
-      "Jifunze somo la juma hili kwa maandalizi ya Sabato ya Februari 17. </p>
-      <a href="FEl/FEB11.HTML" class="button">11</a>
-      <a href="fel/feb12.html" class="button">12</a>
-      <a href="fel/feb13.html" class="button">13</a>
-      <a href="fel/feb14.html" class="button">14</a>
-  <a href="month.html" class="button">Zote</a>
- 
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg">
+    <h1 class="text-2xl font-bold mb-6 text-center">KoboToolbox Form Auto-Filler</h1>
+    <div class="space-y-4">
+      <button onclick="openForm()" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Open and Auto-Fill Form</button>
+      <button onclick="submitForm()" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500" id="submitBtn" disabled>Submit Form</button>
+      <p id="message" class="text-sm text-gray-600 text-center"></p>
+      <iframe id="formIframe" class="w-full h-96 mt-4 hidden" sandbox="allow-scripts allow-forms allow-same-origin"></iframe>
+    </div>
+  </div>
+
+  <script>
+    const FORM_URL = "https://ee.kobotoolbox.org/x/so7jKAYr";
+    const message = document.getElementById("message");
+    const iframe = document.getElementById("formIframe");
+    const submitBtn = document.getElementById("submitBtn");
+
+    // Mock data for AI auto-filling
+    const mockData = {
+      fullName: ["Amina Juma", "John Mushi", "Fatuma Ally", "Emmanuel Kweka"],
+      gender: ["Male", "Female"],
+      civilStatus: ["Single", "Married", "Divorced"],
+      placeOfBirth: ["Dar es Salaam", "Dodoma", "Arusha"],
+      province: ["Dar es Salaam", "Mwanza", "Mbeya"],
+      address: ["123 Mbagala St", "45 Kivukoni Rd", "78 Uhuru Ave"],
+      idNumber: ["TZ123456789", "TZ987654321", "TZ456789123"],
+      idType: ["Tazkira", "Passport"],
+      email: ["amina.juma@example.com", "john.mushi@example.com"],
+      phone: ["+255712345678", "+255723456789"]
+    };
+
+    function getRandomItem(array) {
+      return array[Math.floor(Math.random() * array.length)];
+    }
+
+    // AI logic to auto-fill form
+    function autoFillForm(doc) {
+      try {
+        // Find all form inputs
+        const textInputs = doc.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"]');
+        const radioInputs = doc.querySelectorAll('input[type="radio"]');
+        const checkboxes = doc.querySelectorAll('input[type="checkbox"]');
+        const selects = doc.querySelectorAll('select');
+
+        // Auto-fill text inputs
+        textInputs.forEach(input => {
+          const name = input.name.toLowerCase();
+          if (name.includes("name")) input.value = getRandomItem(mockData.fullName);
+          else if (name.includes("birth")) input.value = getRandomItem(mockData.placeOfBirth);
+          else if (name.includes("address")) input.value = getRandomItem(mockData.address);
+          else if (name.includes("id") || name.includes("tazkira") || name.includes("passport")) input.value = getRandomItem(mockData.idNumber);
+          else if (name.includes("email")) input.value = getRandomItem(mockData.email);
+          else if (name.includes("phone")) input.value = getRandomItem(mockData.phone);
+          else input.value = "Sample Text";
+        });
+
+        // Auto-fill radio buttons (select one per group)
+        const radioGroups = new Set([...radioInputs].map(r => r.name));
+        radioGroups.forEach(group => {
+          const groupRadios = doc.querySelectorAll(`input[name="${group}"]`);
+          const randomRadio = groupRadios[Math.floor(Math.random() * groupRadios.length)];
+          randomRadio.checked = true;
+        });
+
+        // Auto-fill checkboxes (randomly check 0-2 per group)
+        const checkboxGroups = new Set([...checkboxes].map(c => c.name));
+        checkboxGroups.forEach(group => {
+          const groupCheckboxes = doc.querySelectorAll(`input[name="${group}"]`);
+          const toCheck = Math.floor(Math.random() * 3); // 0-2 checkboxes
+          for (let i = 0; i < toCheck && i < groupCheckboxes.length; i++) {
+            groupCheckboxes[i].checked = true;
+          }
+        });
+
+        // Auto-fill select dropdowns
+        selects.forEach(select => {
+          const options = select.querySelectorAll('option:not([value=""])');
+          if (options.length > 0) {
+            const randomOption = options[Math.floor(Math.random() * options.length)];
+            select.value = randomOption.value;
+          }
+        });
+
+        message.textContent = "Form auto-filled successfully! Click 'Submit Form' to submit.";
+        submitBtn.disabled = false;
+      } catch (error) {
+        message.textContent = "Error auto-filling form. Try the content script fallback (see console).";
+        console.error(error);
+        console.log(getContentScript());
+      }
+    }
+
+    // Open form and attempt auto-fill
+    function openForm() {
+      message.textContent = "Opening form...";
+      iframe.classList.remove("hidden");
+      iframe.src = FORM_URL;
+
+      iframe.onload = () => {
+        try {
+          const doc = iframe.contentDocument || iframe.contentWindow.document;
+          if (doc) {
+            autoFillForm(doc);
+          } else {
+            throw new Error("Cannot access iframe document.");
+          }
+        } catch (error) {
+          message.textContent = "Cross-origin restriction detected. Use content script (see console).";
+          console.error(error);
+          console.log(getContentScript());
+          // Fallback: Open in new tab
+          window.open(FORM_URL, "_blank");
+        }
+      };
+    }
+
+    // Submit form programmatically
+    function submitForm() {
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow.document;
+        const submitButton = doc.querySelector('.form-footer__button--submit, button[type="submit"], input[type="submit"]');
+        if (submitButton) {
+          submitButton.click();
+          message.textContent = "Form submitted successfully!";
+          submitBtn.disabled = true;
+        } else {
+          message.textContent = "Submit button not found. Check form manually.";
+        }
+      } catch (error) {
+        message.textContent = "Error submitting form. Submit manually in the form tab.";
+        console.error(error);
+      }
+    }
+
+    // Generate content script for manual execution
+    function getContentScript() {
+      return `
+        // Paste this in the browser console on the form page (https://ee.kobotoolbox.org/x/so7jKAYr)
+        const mockData = ${JSON.stringify(mockData)};
+        function getRandomItem(array) {
+          return array[Math.floor(Math.random() * array.length)];
+        }
+        const textInputs = document.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"]');
+        textInputs.forEach(input => {
+          const name = input.name.toLowerCase();
+          if (name.includes("name")) input.value = getRandomItem(mockData.fullName);
+          else if (name.includes("birth")) input.value = getRandomItem(mockData.placeOfBirth);
+          else if (name.includes("address")) input.value = getRandomItem(mockData.address);
+          else if (name.includes("id") || name.includes("tazkira") || name.includes("passport")) input.value = getRandomItem(mockData.idNumber);
+          else if (name.includes("email")) input.value = getRandomItem(mockData.email);
+          else if (name.includes("phone")) input.value = getRandomItem(mockData.phone);
+          else input.value = "Sample Text";
+        });
+        const radioInputs = document.querySelectorAll('input[type="radio"]');
+        const radioGroups = new Set([...radioInputs].map(r => r.name));
+        radioGroups.forEach(group => {
+          const groupRadios = document.querySelectorAll(\`input[name="\${group}"]\`);
+          const randomRadio = groupRadios[Math.floor(Math.random() * groupRadios.length)];
+          randomRadio.checked = true;
+        });
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        const checkboxGroups = new Set([...checkboxes].map(c => c.name));
+        checkboxGroups.forEach(group => {
+          const groupCheckboxes = document.querySelectorAll(\`input[name="\${group}"]\`);
+          const toCheck = Math.floor(Math.random() * 3);
+          for (let i = 0; i < toCheck && i < groupCheckboxes.length; i++) {
+            groupCheckboxes[i].checked = true;
+          }
+        });
+        const selects = document.querySelectorAll('select');
+        selects.forEach(select => {
+          const options = select.querySelectorAll('option:not([value=""])');
+          if (options.length > 0) {
+            const randomOption = options[Math.floor(Math.random() * options.length)];
+            select.value = randomOption.value;
+          }
+        });
+        console.log("Form auto-filled. Click the submit button manually.");
+      `;
+    }
+  </script>
 </body>
 </html>
