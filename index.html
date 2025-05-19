@@ -1,260 +1,82 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Layman AI KoboToolbox Form Filler</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-  <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg">
-    <h1 class="text-2xl font-bold mb-6 text-center">KoboToolbox Layman Form Filler</h1>
-    <div class="space-y-4">
-      <button onclick="openForm()" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Open and Auto-Fill Form</button>
-      <button onclick="submitForm()" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500" id="submitBtn" disabled>Submit Form</button>
-      <p id="message" class="text-sm text-gray-600 text-center"></p>
-      <iframe id="formIframe" class="w-full h-96 mt-4 hidden" sandbox="allow-scripts allow-forms allow-same-origin"></iframe>
-    </div>
-  </div>
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+import random
+import time
 
-  <script>
-    const FORM_URL = "https://ee.kobotoolbox.org/x/so7jKAYr";
-    const message = document.getElementById("message");
-    const iframe = document.getElementById("formIframe");
-    const submitBtn = document.getElementById("submitBtn");
+# Initialize the Chrome WebDriver
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
 
-    // Mock data for layman-like responses
-    const mockData = {
-      fullName: ["Juma Hassan", "Fatuma Ally", "Mary John", "Emmanuel Kweka", "Aisha Mushi"],
-      gender: ["Male", "Female"],
-      maritalStatus: ["Single", "Married", "Divorced", "Widowed"],
-      region: ["Dar es Salaam", "Dodoma", "Arusha", "Mwanza", "Mbeya"],
-      address: ["Mbagala", "Kivukoni", "Kinondoni", "Temeke"],
-      phone: ["+255712345678", "+255723456789", "+255734567890", "+255745678901"],
-      email: ["juma.hassan@gmail.com", "fatuma.ally@yahoo.com", "mary.john@outlook.com"],
-      idNumber: ["TZ123456789", "TZ987654321", "TZ456789123"],
-      education: ["Secondary", "Certificate", "Diploma", "Degree"],
-      occupation: ["Farmer", "Trader", "Teacher", "Driver", "Housewife"],
-      yesNo: ["Yes", "No"],
-      healthStatus: ["Good", "Fair", "Poor"]
-    };
+try:
+    # Open the KoboToolbox form link
+    form_url = "https://ee.kobotoolbox.org/x/so7jKAYr"
+    driver.get(form_url)
 
-    // Probability weights for layman choices (favor common options)
-    const choiceWeights = {
-      gender: { Male: 0.5, Female: 0.5 },
-      maritalStatus: { Single: 0.6, Married: 0.3, Divorced: 0.05, Widowed: 0.05 },
-      yesNo: { No: 0.7, Yes: 0.3 }, // Layman avoids complexity
-      healthStatus: { Good: 0.7, Fair: 0.25, Poor: 0.05 }
-    };
+    # Wait for the form to load (adjust timeout as needed)
+    WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.TAG_NAME, "form"))
+    )
 
-    function getWeightedRandomItem(options, weights) {
-      const total = Object.values(weights).reduce((sum, w) => sum + w, 0);
-      let rand = Math.random() * total;
-      for (const [option, weight] of Object.entries(weights)) {
-        rand -= weight;
-        if (rand <= 0) return option;
-      }
-      return options[0]; // Fallback
-    }
+    # Find all question groups (typically sections or individual questions)
+    question_groups = driver.find_elements(By.CLASS_NAME, "question")
 
-    // AI logic to auto-fill form as a layman
-    function autoFillForm(doc) {
-      try {
-        // Find all form inputs
-        const textInputs = doc.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], input[type="number"]');
-        const radioInputs = doc.querySelectorAll('input[type="radio"]');
-        const checkboxes = doc.querySelectorAll('input[type="checkbox"]');
-        const selects = doc.querySelectorAll('select');
+    for question in question_groups:
+        try:
+            # Handle radio buttons
+            radio_buttons = question.find_elements(By.XPATH, ".//input[@type='radio']")
+            if radio_buttons:
+                # Select a random radio button
+                random.choice(radio_buttons).click()
 
-        // Auto-fill text inputs
-        textInputs.forEach(input => {
-          const name = input.name.toLowerCase();
-          const label = input.closest('.question')?.querySelector('label')?.textContent.toLowerCase() || '';
-          if (name.includes("name") || label.includes("name")) input.value = mockData.fullName[0]; // Use first name for consistency
-          else if (name.includes("region") || name.includes("province") || label.includes("region")) input.value = mockData.region[0]; // Prefer major region
-          else if (name.includes("address") || label.includes("address")) input.value = mockData.address[0];
-          else if (name.includes("phone") || label.includes("phone")) input.value = mockData.phone[0];
-          else if (name.includes("email") || label.includes("email")) input.value = mockData.email[0];
-          else if (name.includes("id") || name.includes("tazkira") || label.includes("id")) input.value = mockData.idNumber[0];
-          else if (name.includes("occupation") || label.includes("occupation")) input.value = mockData.occupation[0];
-          else input.value = "N/A"; // Layman default for unknown fields
-        });
+            # Handle dropdowns (select elements)
+            dropdowns = question.find_elements(By.TAG_NAME, "select")
+            if dropdowns:
+                for dropdown in dropdowns:
+                    options = dropdown.find_elements(By.TAG_NAME, "option")
+                    # Exclude the first option if it's a placeholder (e.g., "Select...")
+                    valid_options = [opt for opt in options if opt.get_attribute("value") and opt.is_enabled()]
+                    if valid_options:
+                        random.choice(valid_options).click()
 
-        // Auto-fill radio buttons
-        const radioGroups = new Set([...radioInputs].map(r => r.name));
-        radioGroups.forEach(group => {
-          const groupRadios = doc.querySelectorAll(`input[name="${group}"]`);
-          const label = groupRadios[0].closest('.question')?.querySelector('label')?.textContent.toLowerCase() || '';
-          let choice;
-          if (group.includes("gender") || label.includes("gender")) {
-            choice = getWeightedRandomItem(mockData.gender, choiceWeights.gender);
-          } else if (group.includes("marital") || label.includes("marital")) {
-            choice = getWeightedRandomItem(mockData.maritalStatus, choiceWeights.maritalStatus);
-          } else if (group.includes("yesno") || label.includes("yes") || label.includes("no")) {
-            choice = getWeightedRandomItem(mockData.yesNo, choiceWeights.yesNo);
-          } else if (group.includes("health") || label.includes("health")) {
-            choice = getWeightedRandomItem(mockData.healthStatus, choiceWeights.healthStatus);
-          } else {
-            choice = groupRadios[0].value; // Default to first option
-          }
-          const radio = Array.from(groupRadios).find(r => r.value.toLowerCase() === choice.toLowerCase());
-          if (radio) radio.checked = true;
-        });
+            # Handle text inputs
+            text_inputs = question.find_elements(By.XPATH, ".//input[@type='text']")
+            for text_input in text_inputs:
+                # Fill with a generic response (customize as needed)
+                text_input.send_keys("Sample response")
 
-        // Auto-fill checkboxes (select 1 for simplicity)
-        const checkboxGroups = new Set([...checkboxes].map(c => c.name));
-        checkboxGroups.forEach(group => {
-          const groupCheckboxes = doc.querySelectorAll(`input[name="${group}"]`);
-          if (groupCheckboxes.length > 0) {
-            groupCheckboxes[0].checked = true; // Layman picks first option
-          }
-        });
+            # Handle checkboxes (if multiple selections are allowed)
+            checkboxes = question.find_elements(By.XPATH, ".//input[@type='checkbox']")
+            if checkboxes:
+                # Select one random checkbox
+                random.choice(checkboxes).click()
 
-        // Auto-fill select dropdowns
-        selects.forEach(select => {
-          const name = select.name.toLowerCase();
-          const label = select.closest('.question')?.querySelector('label')?.textContent.toLowerCase() || '';
-          const options = select.querySelectorAll('option:not([value=""])');
-          if (options.length > 0) {
-            let choice;
-            if (name.includes("region") || label.includes("region")) {
-              choice = mockData.region[0];
-            } else if (name.includes("education") || label.includes("education")) {
-              choice = mockData.education[0];
-            } else {
-              choice = options[0].value; // Default to first option
-            }
-            select.value = Array.from(options).find(o => o.text.toLowerCase().includes(choice.toLowerCase()))?.value || options[0].value;
-          }
-        });
+        except Exception as e:
+            print(f"Error processing question: {e}")
+            continue
 
-        message.textContent = "Form auto-filled with layman responses! Click 'Submit Form' to submit.";
-        submitBtn.disabled = false;
-      } catch (error) {
-        message.textContent = "Error auto-filling form. Try the content script fallback (see console).";
-        console.error(error);
-        console.log(getContentScript());
-      }
-    }
+    # Ensure the submit button is present and ready
+    submit_button = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.XPATH, "//button[@type='submit']"))
+    )
+    print("Form is filled and ready for submission. Click the submit button manually.")
 
-    // Open form and attempt auto-fill
-    function openForm() {
-      message.textContent = "Opening form...";
-      iframe.classList.remove("hidden");
-      iframe.src = FORM_URL;
+    # Keep the browser open until the user manually submits
+    while True:
+        time.sleep(1)  # Check periodically to keep the script running
+        # Optionally, check if the form is still open
+        if "thank" in driver.current_url.lower() or "submitted" in driver.current_url.lower():
+            print("Form submission detected.")
+            break
 
-      iframe.onload = () => {
-        try {
-          const doc = iframe.contentDocument || iframe.contentWindow.document;
-          if (doc) {
-            autoFillForm(doc);
-          } else {
-            throw new Error("Cannot access iframe document.");
-          }
-        } catch (error) {
-          message.textContent = "Cross-origin restriction detected. Use content script (see console).";
-          console.error(error);
-          console.log(getContentScript());
-          // Fallback: Open in new tab
-          window.open(FORM_URL, "_blank");
-        }
-      };
-    }
+except Exception as e:
+    print(f"An error occurred: {e}")
 
-    // Submit form programmatically
-    function submitForm() {
-      try {
-        const doc = iframe.contentDocument || iframe.contentWindow.document;
-        const submitButton = doc.querySelector('.form-footer__button--submit, button[type="submit"], input[type="submit"]');
-        if (submitButton) {
-          submitButton.click();
-          message.textContent = "Form submitted successfully!";
-          submitBtn.disabled = true;
-        } else {
-          message.textContent = "Submit button not found. Check form manually.";
-        }
-      } catch (error) {
-        message.textContent = "Error submitting form. Submit manually in the form tab.";
-        console.error(error);
-      }
-    }
-
-    // Generate content script for manual execution
-    function getContentScript() {
-      return `
-        // Paste this in the browser console on the form page (https://ee.kobotoolbox.org/x/so7jKAYr)
-        const mockData = ${JSON.stringify(mockData)};
-        const choiceWeights = ${JSON.stringify(choiceWeights)};
-        function getWeightedRandomItem(options, weights) {
-          const total = Object.values(weights).reduce((sum, w) => sum + w, 0);
-          let rand = Math.random() * total;
-          for (const [option, weight] of Object.entries(weights)) {
-            rand -= weight;
-            if (rand <= 0) return option;
-          }
-          return options[0];
-        }
-        const textInputs = document.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], input[type="number"]');
-        textInputs.forEach(input => {
-          const name = input.name.toLowerCase();
-          const label = input.closest('.question')?.querySelector('label')?.textContent.toLowerCase() || '';
-          if (name.includes("name") || label.includes("name")) input.value = mockData.fullName[0];
-          else if (name.includes("region") || name.includes("province") || label.includes("region")) input.value = mockData.region[0];
-          else if (name.includes("address") || label.includes("address")) input.value = mockData.address[0];
-          else if (name.includes("phone") || label.includes("phone")) input.value = mockData.phone[0];
-          else if (name.includes("email") || label.includes("email")) input.value = mockData.email[0];
-          else if (name.includes("id") || name.includes("tazkira") || label.includes("id")) input.value = mockData.idNumber[0];
-          else if (name.includes("occupation") || label.includes("occupation")) input.value = mockData.occupation[0];
-          else input.value = "N/A";
-        });
-        const radioInputs = document.querySelectorAll('input[type="radio"]');
-        const radioGroups = new Set([...radioInputs].map(r => r.name));
-        radioGroups.forEach(group => {
-          const groupRadios = document.querySelectorAll(\`input[name="\${group}"]\`);
-          const label = groupRadios[0].closest('.question')?.querySelector('label')?.textContent.toLowerCase() || '';
-          let choice;
-          if (group.includes("gender") || label.includes("gender")) {
-            choice = getWeightedRandomItem(mockData.gender, choiceWeights.gender);
-          } else if (group.includes("marital") || label.includes("marital")) {
-            choice = getWeightedRandomItem(mockData.maritalStatus, choiceWeights.maritalStatus);
-          } else if (group.includes("yesno") || label.includes("yes") || label.includes("no")) {
-            choice = getWeightedRandomItem(mockData.yesNo, choiceWeights.yesNo);
-          } else if (group.includes("health") || label.includes("health")) {
-            choice = getWeightedRandomItem(mockData.healthStatus, choiceWeights.healthStatus);
-          } else {
-            choice = groupRadios[0].value;
-          }
-          const radio = Array.from(groupRadios).find(r => r.value.toLowerCase() === choice.toLowerCase());
-          if (radio) radio.checked = true;
-        });
-        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-        const checkboxGroups = new Set([...checkboxes].map(c => c.name));
-        checkboxGroups.forEach(group => {
-          const groupCheckboxes = document.querySelectorAll(\`input[name="\${group}"]\`);
-          if (groupCheckboxes.length > 0) {
-            groupCheckboxes[0].checked = true;
-          }
-        });
-        const selects = document.querySelectorAll('select');
-        selects.forEach(select => {
-          const name = select.name.toLowerCase();
-          const label = select.closest('.question')?.querySelector('label')?.textContent.toLowerCase() || '';
-          const options = select.querySelectorAll('option:not([value=""])');
-          if (options.length > 0) {
-            let choice;
-            if (name.includes("region") || label.includes("region")) {
-              choice = mockData.region[0];
-            } else if (name.includes("education") || label.includes("education")) {
-              choice = mockData.education[0];
-            } else {
-              choice = options[0].value;
-            }
-            select.value = Array.from(options).find(o => o.text.toLowerCase().includes(choice.toLowerCase()))?.value || options[0].value;
-          }
-        });
-        console.log("Form auto-filled with layman responses. Click the submit button manually.");
-      `;
-    }
-  </script>
-</body>
-</html>
+finally:
+    # Keep the browser open for manual inspection (close manually)
+    print("Browser will remain open. Close it manually when done.")
+    # Optionally, uncomment to close automatically after a delay
+    # time.sleep(60)
+    # driver.quit()
